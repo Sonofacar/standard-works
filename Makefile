@@ -1,14 +1,14 @@
-kjv: kjv.sh kjv.awk kjv.tsv
-	cat kjv.sh > $@
+bom: bom.sh kjv.awk bom.tsv
+	cat bom.sh > $@
 
 	echo 'exit 0' >> $@
 
 	echo '#EOF' >> $@
-	tar cz kjv.awk kjv.tsv >> $@
+	tar cz kjv.awk bom.tsv >> $@
 
 	chmod +x $@
 
-test: kjv.sh
-	shellcheck -s sh kjv.sh
+test: bom.sh
+	shellcheck -s sh bom.sh
 
 .PHONY: test
