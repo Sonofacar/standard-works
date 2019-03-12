@@ -11,4 +11,15 @@ pogp: kjv.sh kjv.awk pogp.tsv
 test: kjv.sh
 	shellcheck -s sh kjv.sh
 
-.PHONY: test
+clean:
+	rm -f pogp
+
+install: pogp
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp -f pogp $(DESTDIR)$(PREFIX)/bin
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/pogp
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/pogp
+
+.PHONY: test clean install uninstall
