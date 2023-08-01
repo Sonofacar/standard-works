@@ -1,27 +1,27 @@
 PREFIX = /usr/local
 
-bom: bom.sh kjv.awk bom.tsv
-	cat bom.sh > $@
+std-works: std-works.sh std-works.awk TSVs/quad.tsv
+	cat std-works.sh > $@
 
 	echo 'exit 0' >> $@
 
 	echo '#EOF' >> $@
-	tar cz kjv.awk bom.tsv >> $@
+	tar cz std-works.awk TSVs/quad.tsv >> $@
 
 	chmod +x $@
 
-test: bom.sh
-	shellcheck -s sh bom.sh
+test: std-works.sh
+	shellcheck -s sh std-works.sh
 
 clean:
-	rm -f bom
+	rm -f std-works
 
-install: bom
+install: std-works
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp -f bom $(DESTDIR)$(PREFIX)/bin
-	chmod 775 $(DESTDIR)$(PREFIX)/bin/bom
+	cp -f std-works $(DESTDIR)$(PREFIX)/bin
+	chmod 775 $(DESTDIR)$(PREFIX)/bin/std-works
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/bom
+	rm -f $(DESTDIR)$(PREFIX)/bin/std-works
 
 .PHONY: test clean install uninstall
