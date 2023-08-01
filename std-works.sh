@@ -59,7 +59,7 @@ while [ $# -gt 0 ]; do
 		break
 	elif [ "$1" = "-l" ]; then
 		# List all book names with their abbreviations
-		get_data bom.tsv | awk -v cmd=list "$(get_data kjv.awk)"
+		get_data TSVs/quad.tsv | awk -v cmd=list "$(get_data std-works.awk)"
 		exit
 	elif [ "$1" = "-W" ]; then
 		export KJV_NOLINEWRAP=1
@@ -83,14 +83,14 @@ if [ $# -eq 0 ]; then
 
 	# Interactive mode
 	while true; do
-		printf "bom> "
+		printf "quad > "
 		if ! read -r ref; then
 			printf '\n'
 			break
 		fi
-		get_data bom.tsv | awk -v cmd=ref -v ref="$ref" "$(get_data kjv.awk)" | ${PAGER}
+		get_data TSVs/quad.tsv | awk -v cmd=ref -v ref="$ref" "$(get_data std-works.awk)" | ${PAGER}
 	done
 	exit 0
 fi
 
-get_data bom.tsv | awk -v cmd=ref -v ref="$*" "$(get_data kjv.awk)" | ${PAGER}
+get_data TSVs/quad.tsv | awk -v cmd=ref -v ref="$*" "$(get_data std-works.awk)" | ${PAGER}
