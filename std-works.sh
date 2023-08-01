@@ -85,6 +85,7 @@ if [ $# -eq 0 ]; then
 	while true; do
 		printf "bom> "
 		if ! read -r ref; then
+			printf '\n'
 			break
 		fi
 		get_data bom.tsv | awk -v cmd=ref -v ref="$ref" "$(get_data kjv.awk)" | ${PAGER}
