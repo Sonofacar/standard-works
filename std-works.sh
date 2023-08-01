@@ -59,7 +59,7 @@ while [ $# -gt 0 ]; do
 		break
 	elif [ "$1" = "-l" ]; then
 		# List all book names with their abbreviations
-		get_data TSVs/quad.tsv | awk -v cmd=list "$(get_data std-works.awk)"
+		get_data TSVs/quad.tsv | awk -v cmd=list "$(get_data std-works.awk)" | column
 		exit
 	elif [ "$1" = "-W" ]; then
 		export KJV_NOLINEWRAP=1
