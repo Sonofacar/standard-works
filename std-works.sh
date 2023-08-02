@@ -83,7 +83,7 @@ if [ $# -eq 0 ]; then
 
 	# Interactive mode
 	while true; do
-		printf "quad > "
+		printf "%b > " \📚
 		if ! read -r ref; then
 			printf '\n'
 			break
