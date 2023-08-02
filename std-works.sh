@@ -23,6 +23,7 @@ show_help() {
 	echo "  -l      list books"
 	echo "  -W      no line wrap"
 	echo "  -h      show help"
+	echo "  -c	force cat"
 	echo
 	echo "  Reference types:"
 	echo "      <Book>"
@@ -57,6 +58,10 @@ while [ $# -gt 0 ]; do
 	if [ "$1" = "--" ]; then
 		shift
 		break
+	elif [ "$1" = "-c" ]; then
+		# Forces cat
+		PAGER="cat"
+		shift
 	elif [ "$1" = "-l" ]; then
 		# List all book names with their abbreviations
 		get_data TSVs/quad.tsv | awk -v cmd=list "$(get_data std-works.awk)" | column
