@@ -38,6 +38,9 @@ function parseref(ref, arr) {
 	# 7. /<search>
 	# 8. <book>/search
 	# 9. <book>:?<chapter>/search
+	# 10. list
+	# 11. list chapters <book>
+	# 12. list verses <book>:<chapter>
 
 	if (match(ref, "^[1-9]?[a-zA-Z -]+")) {
 		# 1, 2, 3, 3a, 4, 5, 6, 8, 9
@@ -126,6 +129,10 @@ function parseref(ref, arr) {
 	} else {
 		return "unknown"
 	}
+
+	if (match(ref, "^list*$")) {
+		return "list"
+	}
 }
 
 function cleanbook(book) {
@@ -182,6 +189,8 @@ function processline() {
 	printverse($6)
 	outputted_records++
 }
+
+# TODO: make list mode
 
 cmd == "ref" && mode == "exact" && bookmatches($1, $2, p["book"]) && (p["chapter"] == "" || $4 == p["chapter"]) && (p["verse"] == "" || $5 == p["verse"]) {
 	processline()
