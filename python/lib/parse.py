@@ -26,24 +26,33 @@ def parse_range(phrase):
         second_results = parse(second)
 
     return {'type': 'range',
-            'books': None,
-            'chapters': None,
-            'verses': None,
+            'books': first_results['books'],
+            'chapters': first_results['chapters'],
+            'verses': first_results['verses'],
             'ranges': (first_results, second_results)}
 
 def parse_normal(phrase):
     output = []
     if is_broken(phrase):
         parts = phrase.split(',')
-        start = parts[0]
+        start = parse(parts[0])
+        output.append(start)
+        book = start['books']
+        chapter = start['chapters']
         for i in range(1,len(parts)):
-            if not has_book(parts[0]):
-                if not has_chapter(parts[0]):
-                    output.append(parse(parts[i], chapter = start['chapters'], book = start['books']))
+            if not has_book(parts[i]):
+                if not has_chapter(parts[i]):
+                    piece = parse(parts[i], chapter = chapter, book = book)
+                    output.append(piece)
                 else:
-                    output.append(parse(parts[i], book = start['books']))
+                    piece = parse(parts[i], book = book)
+                    chapter = piece['chapters']
+                    output.append(piece)
             else:
-                output.append(parse(parts[i]))
+                piece = parse(parts[i])
+                book = piece['books']
+                chapter = piece['chapters']
+                output.append(piece)
 
     else:
         output.append(parse(phrase))
@@ -53,7 +62,7 @@ def parse_normal(phrase):
     verses = [x['verses'] for x in output if x['type'] == 'normal']
     ranges = [x['ranges'] for x in output if x['type'] == 'range']
 
-    return {'type': 'normal',
+    return {'type': 'multiple',
             'books': books,
             'chapters': chapters,
             'verses': verses,
@@ -68,14 +77,14 @@ def parse(phrase, book = '', chapter = ''):
 
     first = phrase.split(',')[0]
 
-    if is_range(first):
-        output = parse_range(phrase)
-
-    elif is_broken(phrase):
+    if is_broken(phrase):
         output = parse_normal(phrase)
 
+    elif is_range(phrase):
+        output = parse_range(phrase)
+
     else:
-        book_match = re.search('[0-9]?[ ]?[A-z]*', first)
+        book_match = re.search('[0-9]?[ ]?[A-z ]*', first)
         book = first[book_match.start():book_match.end()]
         ending = first.split(' ')[-1]
         chapter = ending.split(':')[0]
@@ -83,9 +92,9 @@ def parse(phrase, book = '', chapter = ''):
         ranges = (None, None)
 
         output = {'type': 'normal',
-                  'books': book,
-                  'chapters': chapter,
-                  'verses': verse,
+                  'books': book.strip(),
+                  'chapters': chapter.strip(),
+                  'verses': verse.strip(),
                   'ranges': ranges}
 
     return output
