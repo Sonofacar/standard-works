@@ -1,18 +1,42 @@
 import re
 
-def is_range(phrase):
+def is_range(phrase: str) -> bool:
+    """
+    Check if a query is for a range
+    """
     return '-' in phrase
 
-def has_book(phrase):
+def has_book(phrase: str) -> re.Match:
+    """
+    Check if a query contains a book name
+    """
     return re.match(r'[0-9]?[ ]?[A-z& ]* [0-9]{1,3}:[0-9]{1,3}', phrase)
 
-def has_chapter(phrase):
+def has_chapter(phrase: str) -> bool:
+    """
+    Check if a query contains a chapter number
+    """
     return ':' in phrase
 
-def is_broken(phrase):
+def has_verse(phrase: str) -> bool:
+    """
+    Check if a query contains a verse number. Exactly the same as `has_chapter`,
+    but used in the context of no verses being given in a query rather than a 
+    broken query.
+    """
+    return ':' in phrase
+
+def is_broken(phrase: str) -> bool:
+    """
+    Check if a query is an uncontinuous set of verses
+    """
     return ',' in phrase
 
-def parse_range(phrase):
+def parse_range(phrase: str) -> dict:
+    """
+    Parse a scripture query phrase for a range query and construct a dictionary
+    containing the query information
+    """
     first = phrase.split('-')[0]
     second = phrase.split('-')[1]
 
@@ -31,7 +55,11 @@ def parse_range(phrase):
             'verses': first_results['verses'],
             'ranges': (first_results, second_results)}
 
-def parse_normal(phrase):
+def parse_normal(phrase: str) -> dict:
+    """
+    Parse a scripture query phrase for a normal query and construct a dictionary
+    containing the query information
+    """
     output = []
     if is_broken(phrase):
         parts = phrase.split(',')
@@ -68,7 +96,11 @@ def parse_normal(phrase):
             'verses': verses,
             'ranges': ranges}
 
-def parse(phrase, book = '', chapter = ''):
+def parse(phrase: str, book: str = '', chapter: str = '') -> dict | list:
+    """
+    Parse a scripture query phrase for a set of queries and construct a dictionary
+    or a list of dictionaries containing the query information
+    """
     if book != '':
         if chapter != '':
             phrase = book + ' ' + chapter + ':' + phrase
@@ -85,16 +117,22 @@ def parse(phrase, book = '', chapter = ''):
 
     else:
         book_match = re.search('[0-9]?[ ]?[A-z ]*', first)
-        book = first[book_match.start():book_match.end()]
+        book = first[book_match.start():book_match.end()].strip()
         ending = first.split(' ')[-1]
-        chapter = ending.split(':')[0]
-        verse = ending.split(':')[1]
+        chapter = ending.split(':')[0].strip()
+
+        try:
+            verse = ending.split(':')[1].strip()
+        except:
+            verse = None
+
         ranges = (None, None)
 
         output = {'type': 'normal',
-                  'books': book.strip(),
-                  'chapters': chapter.strip(),
-                  'verses': verse.strip(),
+                  'books': book,
+                  'chapters': chapter,
+                  'verses': verse,
                   'ranges': ranges}
 
     return output
+

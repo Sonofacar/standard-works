@@ -1,6 +1,7 @@
 import sqlite3
-
-default_location = 'scriptures.sql'
+import importlib.resources
+import os
+default_location = os.path.join(os.path.dirname(__file__), 'scriptures.sql')
 
 short_names = ['Ge', 'Exo', 'Lev', 'Num', 'Deu', 'Josh', 'Jdgs', 'Ruth', '1Sm',
                '2Sm', '1Ki', '2Ki', '1Chr', '2Chr', 'Ezra', 'Neh', 'Est', 'Job',
@@ -41,15 +42,38 @@ dc    = ['DandC', 'Doctrine and Covenants']
 pogp  = ['Moses', 'Abr', 'JS_M', 'JS_H', 'AofF', 'Moses', 'Abraham',
          'Joseph Smith Matthew', 'Joseph Smith History', 'Articles of Faith']
 
+book_names = bible + bom + dc + pogp
+
 columns_to_get = 'name,chapter,verse,text'
 
-def is_short_name(book_name):
+def is_short_name(book_name: str) -> bool:
+    """
+    Check if a name is in short form
+    """
     return book_name in short_names
 
-def is_list(obj):
+def is_list(obj) -> bool:
+    """
+    Check if an object is a list
+    """
     return isinstance(obj, list)
 
-def map_to_work(book):
+def is_book_name(word: str) -> bool:
+    """
+    Check if a name is in any book
+    """
+    return word in book_names
+
+def is_whole_chapter(verse_dict: dict) -> bool:
+    """
+    Check if query is for an entire chapter
+    """
+    return verse_dict['verses'] == None
+
+def map_to_work(book: str) -> str:
+    """
+    Sort out which work a book belongs to
+    """
     if book in bible:
         return 'bible'
     if book in bom:
@@ -60,7 +84,10 @@ def map_to_work(book):
         return 'pogp'
     return 'error'
 
-def use_phrase(phrase):
+def use_phrase(phrase: str) -> list:
+    """
+    Execute an SQL query to get a selection of verses
+    """
     con = sqlite3.Connection(default_location)
     cur = con.cursor()
     cur.execute(phrase)
@@ -68,19 +95,35 @@ def use_phrase(phrase):
     con.close()
     return output
 
-def make_normal_phrase(verse_dict, index = False):
+def make_normal_phrase(verse_dict: dict, index: bool = False) -> str:
+    """
+    Create an SQL query that simply selects a single verse
+    """
     book = verse_dict['books']
     work = map_to_work(book)
     chapter = verse_dict['chapters']
     verse = verse_dict['verses']
     get = columns_to_get
+
     if index:
         get = 'indx'
-    if is_short_name(book):
-        return 'SELECT ' + get + ' FROM ' + work + ' WHERE short_name LIKE \"' + book + '\" AND chapter = ' + chapter + ' AND verse = ' + verse + ';'
-    return 'SELECT ' + get + ' FROM ' + work + ' WHERE name LIKE \"' + book + '\" AND chapter = ' + chapter + ' AND verse = ' + verse + ';'
 
-def make_range_phrase(start, end):
+    if is_short_name(book):
+        output = 'SELECT ' + get + ' FROM ' + work + ' WHERE short_name LIKE \"' + book + '\" AND chapter = ' + chapter
+    else:
+        output = 'SELECT ' + get + ' FROM ' + work + ' WHERE name LIKE \"' + book + '\" AND chapter = ' + chapter
+
+    if is_whole_chapter(verse_dict):
+        output += ';'
+    else:
+        output += ' AND verse = ' + verse + ';'
+
+    return output
+
+def make_range_phrase(start: dict, end: dict) -> str:
+    """
+    Create an SQL query that select a range of verses
+    """
     work = map_to_work(start['books'])
     start_phrase = make_normal_phrase(start, index = True)
     end_phrase = make_normal_phrase(end, index = True)
@@ -91,7 +134,10 @@ def make_range_phrase(start, end):
         raise RuntimeError('Range not acceptable; it\'s too long.')
     return 'SELECT ' + columns_to_get + ' FROM ' + work + ' WHERE indx BETWEEN ' + str(Start) + ' AND ' + str(End) + ';'
 
-def make_phrase(verse_dict):
+def make_phrase(verse_dict: dict) -> str | list:
+    """
+    Create an SQL phrase or phrases to query scriptures
+    """
     if verse_dict['type'] == 'range':
         output = make_range_phrase(verse_dict['ranges'][0], verse_dict['ranges'][1])
         return output
@@ -116,7 +162,10 @@ def make_phrase(verse_dict):
 
     return output
 
-def get_verses(phrases):
+def get_verses(phrases: str | list) -> list:
+    """
+    Use a phrase or phrases and return selected verses
+    """
     output = []
 
     if isinstance(phrases, list):
@@ -130,3 +179,4 @@ def get_verses(phrases):
         return output
 
     return use_phrase(phrases)
+

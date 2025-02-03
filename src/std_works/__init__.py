@@ -1,7 +1,13 @@
+from std_works.get import *
+from std_works.parse import *
 import re
 import pydoc
 
-def split_lines(text, length):
+def split_lines(text: str, length: int) -> list:
+    """
+    Split text into lines. Lines keep whole words together while approaching
+    a maximum length.
+    """
     output = []
     remaining = text
 
@@ -19,7 +25,11 @@ def split_lines(text, length):
 
     return output
 
-def print_verses(original_phrase, verses, line_length, page = False):
+def print_verses(original_phrase: str, verses: list, line_length: int, page: bool = False) -> None:
+    """
+    Handle the printing of verses, including the selection of verses, and
+    allowing for a specified maximum line length.
+    """
     output = original_phrase + '\n'
 
     for verse in verses:
@@ -30,9 +40,8 @@ def print_verses(original_phrase, verses, line_length, page = False):
         for line in lines:
             output = output + line + '\n'
 
-        output = output + '\n'
-
     if page:
         pydoc.pager(output)
     else:
         print(output)
+
