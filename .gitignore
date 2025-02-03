@@ -1,2 +1,5 @@
 *.swp
 std-works
+build/
+dist/
+src/Standard_Works.egg-info/
