@@ -1,0 +1,157 @@
+#! /usr/bin/python3
+
+import std_works as lib
+import argparse
+import sys
+
+prompt = '📚 > '
+verbs = {'add': 'add',
+         'new': 'add',
+         'print': 'print',
+         'show': 'print',
+         'page': 'page',
+         'explore': 'page',
+         'search': 'query',
+         'query': 'query',
+         'list': 'list',
+         'exit': 'exit',
+         'quit': 'exit',
+         'q': 'exit',
+         'leave': 'exit',
+         'help': 'help',
+         '?': 'help'}
+
+# TODO:
+# - Complete note utilities
+# - Complete querying (verses and notes)
+# - Add listing verses function
+# - Allow referencing entire chapters
+# - Fix defaulting to print verses when no command is given
+# - Fix allowing case-insensitive queries
+# - Make more robust error handling
+# - 
+
+# functions
+def print_help():
+    message = """Usage:
+    \t<print, show> <verse(s)>
+    Simply print the desired verses.
+
+    \t<page, explore> <verse(s)>
+    Print the verses inside a pager.
+
+    \t<add, new> note
+    Create a new note.
+
+    \t<help, ?>
+    Print this help message.
+    """
+
+    print(message)
+
+def get_verse(query):
+    dictionary = lib.parse(query)
+    phrase = lib.make_phrase(dictionary)
+    verses = lib.get_verses(phrase)
+    return verses
+
+def parse_action(info):
+    output = {}
+    action = lib.re.findall(r'^[1-4]?[ ]?[A-z&]*', info)[0].strip()
+
+    if lib.is_book_name(action):
+        output['action'] = 'print'
+        output['target'] = action
+    else:
+        output['action'] = verbs[action.lower()]
+        target = ' '.join(info.split(' ')[1:]).strip()
+        output['target'] = target
+
+    return output
+
+def do_command(action_dict, length = 70):
+    match action_dict['action']:
+        
+        case 'print':
+            phrase = action_dict['target']
+            verses = get_verse(phrase)
+            lib.print_verses(phrase, verses, length)
+            return True
+
+        case 'page':
+            phrase = action_dict['target']
+            verses = get_verse(phrase)
+            lib.print_verses(phrase, verses, length, True)
+            return True
+
+        case 'exit':
+            return False
+
+        case 'help':
+            print_help()
+            return True
+
+# Parse commandline
+parser = argparse.ArgumentParser(
+        prog = "Standard Works",
+        description = """
+        Read the full Standard Works of the Church of Jesus Christ of
+        Latter-day Saints from your terminal."""
+        )
+parser.add_argument(
+        "selection",
+        nargs = "?",
+        type = str,
+        help = """
+        The selection of verses desired. If not given, it will go to
+        the command line interface."""
+        )
+parser.add_argument(
+        "-p",
+        "--page",
+        action = "store_true",
+        help = "Print verse inside a pager (e.g. less)."
+        )
+parser.add_argument(
+        "-c",
+        "--chars",
+        action = "store",
+        type = int,
+        default = 70,
+        help = "Set maximum number of characters in a line."
+        )
+args = vars(parser.parse_args(sys.argv[1:]))
+
+# Handle defaults
+if args['selection'] == None:
+    Commandline = True
+    Page = False
+else:
+    Commandline = False
+    Page = args['page']
+
+    action = {}
+    if Page:
+        action['action'] = 'page'
+    else:
+        action['action'] = 'print'
+    action['target'] = args['selection']
+
+    output = do_command(action, args['chars'])
+    exit()
+
+# Script
+while Commandline:
+    try:
+        command = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        break
+
+    action = parse_action(command)
+
+    try:
+        Commandline = do_command(action, args['chars'])
+    except:
+        print('Command not understood; try again.')
+
