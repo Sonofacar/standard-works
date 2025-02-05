@@ -135,7 +135,7 @@ else:
         action['action'] = 'page'
     else:
         action['action'] = 'print'
-    action['target'] = args['selection']
+    action['target'] = args['selection'].strip()
 
     output = do_command(action, args['chars'])
     exit()
@@ -143,7 +143,7 @@ else:
 # Script
 while Commandline:
     try:
-        command = input(prompt)
+        command = input(prompt).strip()
     except (EOFError, KeyboardInterrupt):
         print()
         break
