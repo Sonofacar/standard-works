@@ -20,6 +20,12 @@ def split_lines(text: str, length: int) -> list:
 
         spaces = [x for x in re.finditer(' ', remaining)]
         cuts = [x for x in spaces if x.start() < length]
+
+        if not cuts:
+            output.append(remaining[:length])
+            remaining = remaining[length:]
+            continue
+
         output.append(remaining[0:cuts[-1].start()])
         remaining = remaining[cuts[-1].end():]
 

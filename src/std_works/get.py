@@ -1,5 +1,4 @@
 import sqlite3
-import importlib.resources
 import os
 default_location = os.path.join(os.path.dirname(__file__), 'scriptures.sql')
 
@@ -89,12 +88,10 @@ def use_phrase(phrase: str) -> list:
     """
     Execute an SQL query to get a selection of verses
     """
-    con = sqlite3.Connection(default_location)
-    cur = con.cursor()
-    cur.execute(phrase)
-    output = cur.fetchall()
-    con.close()
-    return output
+    with sqlite3.Connection(default_location) as con:
+        cur = con.cursor()
+        cur.execute(phrase)
+        return cur.fetchall()
 
 def make_normal_phrase(verse_dict: dict, index: bool = False) -> str:
     """
@@ -102,6 +99,8 @@ def make_normal_phrase(verse_dict: dict, index: bool = False) -> str:
     """
     book = verse_dict['books']
     work = map_to_work(book)
+    if work == 'error':
+        raise ValueError('Unknown book: ' + book)
     get = columns_to_get
 
     if index:
@@ -133,12 +132,14 @@ def make_range_phrase(start: dict, end: dict) -> str:
     Create an SQL query that select a range of verses
     """
     work = map_to_work(start['books'])
+    if work == 'error':
+        raise ValueError('Unknown book: ' + start['books'])
     start_phrase = make_normal_phrase(start, index = True)
     end_phrase = make_normal_phrase(end, index = True)
     Start = use_phrase(start_phrase)[0][0]
     try:
         End = use_phrase(end_phrase)[0][0]
-    except:
+    except IndexError:
         raise RuntimeError('Range not acceptable; it\'s too long.')
     return 'SELECT ' + columns_to_get + ' FROM ' + work + ' WHERE indx BETWEEN ' + str(Start) + ' AND ' + str(End) + ';'
 

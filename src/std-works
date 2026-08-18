@@ -5,31 +5,16 @@ import argparse
 import sys
 
 prompt = '📚 > '
-verbs = {'add': 'add',
-         'new': 'add',
-         'print': 'print',
+verbs = {'print': 'print',
          'show': 'print',
          'page': 'page',
          'explore': 'page',
-         'search': 'query',
-         'query': 'query',
-         'list': 'list',
          'exit': 'exit',
          'quit': 'exit',
          'q': 'exit',
          'leave': 'exit',
          'help': 'help',
          '?': 'help'}
-
-# TODO:
-# - Complete note utilities
-# - Complete querying (verses and notes)
-# - Add listing verses function
-# - Allow referencing entire chapters
-# - Fix defaulting to print verses when no command is given
-# - Fix allowing case-insensitive queries
-# - Make more robust error handling
-# - 
 
 # functions
 def print_help():
@@ -39,9 +24,6 @@ def print_help():
 
     \t<page, explore> <verse(s)>
     Print the verses inside a pager.
-
-    \t<add, new> note
-    Create a new note.
 
     \t<help, ?>
     Print this help message.
@@ -89,6 +71,10 @@ def do_command(action_dict, length = 70):
 
         case 'help':
             print_help()
+            return True
+
+        case _:
+            print('Command not understood.')
             return True
 
 # Parse commandline
@@ -152,6 +138,6 @@ while Commandline:
 
     try:
         Commandline = do_command(action, args['chars'])
-    except:
+    except Exception:
         print('Command not understood; try again.')
 
