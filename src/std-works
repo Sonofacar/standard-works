@@ -57,16 +57,16 @@ def get_verse(query):
 
 def parse_action(info):
     output = {}
-    action = lib.re.findall(r'^[1-4]?[ ]?[A-z&]*', info)[0].strip()
+    info = info.strip()
 
-    if lib.is_book_name(action):
-        output['action'] = 'print'
-        output['target'] = action
-    else:
-        output['action'] = verbs[action.lower()]
-        target = ' '.join(info.split(' ')[1:]).strip()
-        output['target'] = target
+    for verb in verbs:
+        if info.startswith(verb + ' ') or info == verb:
+            output['action'] = verbs[verb]
+            output['target'] = info[len(verb):].strip()
+            return output
 
+    output['action'] = 'print'
+    output['target'] = info
     return output
 
 def do_command(action_dict, length = 70):

@@ -1,4 +1,16 @@
 import re
+from std_works.get import book_names, short_names
+
+def normalize_book_name(book: str) -> str:
+    """
+    Normalize a book name to match the database. Short names like '1Ne' have
+    no space between digit and letters; full names like '1 Nephi' do. Check
+    which form the DB expects.
+    """
+    collapsed = re.sub(r'([0-9]) ([A-Za-z])', r'\1\2', book)
+    if collapsed in short_names:
+        return collapsed
+    return book
 
 def is_range(phrase: str) -> bool:
     """
@@ -43,9 +55,12 @@ def parse_range(phrase: str) -> dict:
     first_results = parse(first)
     if not has_book(second):
         if not has_chapter(second):
-            second_results = parse(second, chapter = first_results['chapters'], book = first_results['books'])
+            if first_results['verses'] is None:
+                second_results = parse(second, chapter=second, book=first_results['books'])
+            else:
+                second_results = parse(second, chapter=first_results['chapters'], book=first_results['books'])
         else:
-            second_results = parse(second, book = first_results['books'])
+            second_results = parse(second, book=first_results['books'])
     else:
         second_results = parse(second)
 
@@ -89,12 +104,14 @@ def parse_normal(phrase: str) -> dict:
     chapters = [x['chapters'] for x in output if x['type'] == 'normal']
     verses = [x['verses'] for x in output if x['type'] == 'normal']
     ranges = [x['ranges'] for x in output if x['type'] == 'range']
+    whole_book = any(x.get('whole_book') for x in output)
 
     return {'type': 'multiple',
             'books': books,
             'chapters': chapters,
             'verses': verses,
-            'ranges': ranges}
+            'ranges': ranges,
+            'whole_book': whole_book}
 
 def parse(phrase: str, book: str = '', chapter: str = '') -> dict | list:
     """
@@ -123,8 +140,17 @@ def parse(phrase: str, book: str = '', chapter: str = '') -> dict | list:
 
         try:
             verse = ending.split(':')[1].strip()
-        except:
+        except (IndexError, AttributeError):
             verse = None
+
+        if ':' not in first and chapter in book_names:
+            chapter = None
+            verse = None
+            whole_book = True
+        else:
+            whole_book = False
+
+        book = normalize_book_name(book)
 
         ranges = (None, None)
 
@@ -132,7 +158,8 @@ def parse(phrase: str, book: str = '', chapter: str = '') -> dict | list:
                   'books': book,
                   'chapters': chapter,
                   'verses': verse,
-                  'ranges': ranges}
+                  'ranges': ranges,
+                  'whole_book': whole_book}
 
     return output
 

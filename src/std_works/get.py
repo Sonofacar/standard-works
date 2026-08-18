@@ -60,9 +60,10 @@ def is_list(obj) -> bool:
 
 def is_book_name(word: str) -> bool:
     """
-    Check if a name is in any book
+    Check if a name matches any book (exact or prefix)
     """
-    return word in book_names
+    word_lower = word.lower().replace(' ', '')
+    return any(word_lower == bn.lower().replace(' ', '') for bn in book_names)
 
 def is_whole_chapter(verse_dict: dict) -> bool:
     """
@@ -101,12 +102,19 @@ def make_normal_phrase(verse_dict: dict, index: bool = False) -> str:
     """
     book = verse_dict['books']
     work = map_to_work(book)
-    chapter = verse_dict['chapters']
-    verse = verse_dict['verses']
     get = columns_to_get
 
     if index:
         get = 'indx'
+
+    if verse_dict.get('whole_book'):
+        if is_short_name(book):
+            return 'SELECT ' + get + ' FROM ' + work + ' WHERE short_name LIKE \"' + book + '\";'
+        else:
+            return 'SELECT ' + get + ' FROM ' + work + ' WHERE name LIKE \"' + book + '\";'
+
+    chapter = verse_dict['chapters']
+    verse = verse_dict['verses']
 
     if is_short_name(book):
         output = 'SELECT ' + get + ' FROM ' + work + ' WHERE short_name LIKE \"' + book + '\" AND chapter = ' + chapter
@@ -157,7 +165,8 @@ def make_phrase(verse_dict: dict) -> str | list:
                       'books': verse_dict['books'][i],
                       'chapters': verse_dict['chapters'][i],
                       'verses': verse_dict['verses'][i],
-                      'ranges': (None, None)}
+                      'ranges': (None, None),
+                      'whole_book': False}
         output.append(make_normal_phrase(dictionary))
 
     return output
