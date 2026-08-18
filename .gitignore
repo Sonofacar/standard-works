@@ -2,3 +2,5 @@
 build/
 dist/
 src/Standard_Works.egg-info/
+**.pyc
+std-works
