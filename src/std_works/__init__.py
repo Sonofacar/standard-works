@@ -11,6 +11,9 @@ def split_lines(text: str, length: int) -> list:
     output = []
     remaining = text
 
+    if length <= 0:
+        length = 1
+
     while remaining != '':
 
         if len(remaining) <= length:

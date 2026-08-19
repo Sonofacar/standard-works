@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from contextlib import closing
 default_location = os.path.join(os.path.dirname(__file__), 'scriptures.sql')
 
 short_names = ['Ge', 'Exo', 'Lev', 'Num', 'Deu', 'Josh', 'Jdgs', 'Ruth', '1Sm',
@@ -45,24 +46,28 @@ book_names = bible + bom + dc + pogp
 
 columns_to_get = 'name,chapter,verse,text'
 
+_aliases = {'d&c': 'DandC', 'dc': 'DandC'}
+
+_canonical_map = {}
+for _name in book_names:
+    _canonical_map.setdefault(_name.lower().replace(' ', ''), _name)
+
+def canonical_book(book: str) -> str:
+    """
+    Resolve a book name to its canonical form, tolerating case and aliases.
+    """
+    if book in book_names:
+        return book
+    norm = book.lower().replace(' ', '')
+    if norm in _aliases:
+        return _aliases[norm]
+    return _canonical_map.get(norm, book)
+
 def is_short_name(book_name: str) -> bool:
     """
     Check if a name is in short form
     """
     return book_name in short_names
-
-def is_list(obj) -> bool:
-    """
-    Check if an object is a list
-    """
-    return isinstance(obj, list)
-
-def is_book_name(word: str) -> bool:
-    """
-    Check if a name matches any book (exact or prefix)
-    """
-    word_lower = word.lower().replace(' ', '')
-    return any(word_lower == bn.lower().replace(' ', '') for bn in book_names)
 
 def is_whole_chapter(verse_dict: dict) -> bool:
     """
@@ -74,13 +79,14 @@ def map_to_work(book: str) -> str:
     """
     Sort out which work a book belongs to
     """
-    if book in bible:
+    canon = canonical_book(book)
+    if canon in bible:
         return 'bible'
-    if book in bom:
+    if canon in bom:
         return 'bom'
-    if book in dc:
+    if canon in dc:
         return 'dc'
-    if book in pogp:
+    if canon in pogp:
         return 'pogp'
     return 'error'
 
@@ -88,7 +94,7 @@ def use_phrase(phrase: str) -> list:
     """
     Execute an SQL query to get a selection of verses
     """
-    with sqlite3.Connection(default_location) as con:
+    with closing(sqlite3.connect(default_location)) as con:
         cur = con.cursor()
         cur.execute(phrase)
         return cur.fetchall()
@@ -97,7 +103,7 @@ def make_normal_phrase(verse_dict: dict, index: bool = False) -> str:
     """
     Create an SQL query that simply selects a single verse
     """
-    book = verse_dict['books']
+    book = canonical_book(verse_dict['books'])
     work = map_to_work(book)
     if work == 'error':
         raise ValueError('Unknown book: ' + book)
@@ -134,13 +140,21 @@ def make_range_phrase(start: dict, end: dict) -> str:
     work = map_to_work(start['books'])
     if work == 'error':
         raise ValueError('Unknown book: ' + start['books'])
+    end_work = map_to_work(end['books'])
+    if end_work == 'error':
+        raise ValueError('Unknown book: ' + end['books'])
+    if end_work != work:
+        raise ValueError('Range spans multiple works.')
     start_phrase = make_normal_phrase(start, index = True)
     end_phrase = make_normal_phrase(end, index = True)
-    Start = use_phrase(start_phrase)[0][0]
-    try:
-        End = use_phrase(end_phrase)[0][0]
-    except IndexError:
+    Start_rows = use_phrase(start_phrase)
+    if not Start_rows:
         raise RuntimeError('Range not acceptable; it\'s too long.')
+    Start = Start_rows[0][0]
+    End_rows = use_phrase(end_phrase)
+    if not End_rows:
+        raise RuntimeError('Range not acceptable; it\'s too long.')
+    End = End_rows[-1][0]
     return 'SELECT ' + columns_to_get + ' FROM ' + work + ' WHERE indx BETWEEN ' + str(Start) + ' AND ' + str(End) + ';'
 
 def make_phrase(verse_dict: dict) -> str | list:
@@ -161,13 +175,17 @@ def make_phrase(verse_dict: dict) -> str | list:
             continue
         output.append(make_range_phrase(pair[0], pair[1]))
 
+    whole_books = verse_dict.get('whole_book', [False] * len(verse_dict['books']))
+    if isinstance(whole_books, bool):
+        whole_books = [whole_books] * len(verse_dict['books'])
+
     for i in range(len(verse_dict['books'])):
         dictionary = {'type': 'normal',
                       'books': verse_dict['books'][i],
                       'chapters': verse_dict['chapters'][i],
                       'verses': verse_dict['verses'][i],
                       'ranges': (None, None),
-                      'whole_book': False}
+                      'whole_book': whole_books[i]}
         output.append(make_normal_phrase(dictionary))
 
     return output

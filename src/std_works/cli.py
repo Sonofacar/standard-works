@@ -195,7 +195,12 @@ def main():
             action['action'] = 'print'
         action['target'] = args['selection'].strip()
 
-        do_command(action, args['chars'])
+        try:
+            do_command(action, args['chars'])
+        except Exception as e:
+            print('Error: ' + str(e))
+            return 1
+
         return 0
 
     while Commandline:

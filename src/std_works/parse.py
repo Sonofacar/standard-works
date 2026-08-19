@@ -1,5 +1,5 @@
 import re
-from std_works.get import book_names, short_names
+from std_works.get import book_names, short_names, canonical_book
 
 def normalize_book_name(book: str) -> str:
     """
@@ -22,7 +22,7 @@ def has_book(phrase: str) -> re.Match:
     """
     Check if a query contains a book name
     """
-    return re.match(r'[0-9]?[ ]?[A-z& ]* [0-9]{1,3}:[0-9]{1,3}', phrase)
+    return re.match(r'[0-9]?[ ]?[A-Za-z& ]* [0-9]{1,3}:[0-9]{1,3}', phrase)
 
 def has_chapter(phrase: str) -> bool:
     """
@@ -30,13 +30,11 @@ def has_chapter(phrase: str) -> bool:
     """
     return ':' in phrase
 
-def has_verse(phrase: str) -> bool:
+def is_whole_book(phrase: str) -> bool:
     """
-    Check if a query contains a verse number. Exactly the same as `has_chapter`,
-    but used in the context of no verses being given in a query rather than a 
-    broken query.
+    Check if a query is for an entire book
     """
-    return ':' in phrase
+    return canonical_book(phrase.strip()) in book_names
 
 def is_broken(phrase: str) -> bool:
     """
@@ -56,7 +54,7 @@ def parse_range(phrase: str) -> dict:
     if not has_book(second):
         if not has_chapter(second):
             if first_results['verses'] is None:
-                second_results = parse(second, chapter=second, book=first_results['books'])
+                second_results = parse(first_results['books'] + ' ' + second)
             else:
                 second_results = parse(second, chapter=first_results['chapters'], book=first_results['books'])
         else:
@@ -83,7 +81,13 @@ def parse_normal(phrase: str) -> dict:
         book = start['books']
         chapter = start['chapters']
         for i in range(1,len(parts)):
-            if not has_book(parts[i]):
+            part = parts[i].strip()
+            if is_whole_book(part):
+                piece = parse(part)
+                book = piece['books']
+                chapter = piece['chapters']
+                output.append(piece)
+            elif not has_book(parts[i]):
                 if not has_chapter(parts[i]):
                     piece = parse(parts[i], chapter = chapter, book = book)
                     output.append(piece)
@@ -104,7 +108,7 @@ def parse_normal(phrase: str) -> dict:
     chapters = [x['chapters'] for x in output if x['type'] == 'normal']
     verses = [x['verses'] for x in output if x['type'] == 'normal']
     ranges = [x['ranges'] for x in output if x['type'] == 'range']
-    whole_book = any(x.get('whole_book') for x in output)
+    whole_book = [x.get('whole_book', False) for x in output if x['type'] == 'normal']
 
     return {'type': 'multiple',
             'books': books,
@@ -133,7 +137,7 @@ def parse(phrase: str, book: str = '', chapter: str = '') -> dict | list:
         output = parse_range(phrase)
 
     else:
-        book_match = re.search('[0-9]?[ ]?[A-z ]*', first)
+        book_match = re.search('[0-9]?[ ]?[A-Za-z& ]*', first)
         book = first[book_match.start():book_match.end()].strip()
         ending = first.split(' ')[-1]
         chapter = ending.split(':')[0].strip()
@@ -143,7 +147,7 @@ def parse(phrase: str, book: str = '', chapter: str = '') -> dict | list:
         except (IndexError, AttributeError):
             verse = None
 
-        if ':' not in first and chapter in book_names:
+        if ':' not in first and canonical_book(first.strip()) in book_names:
             chapter = None
             verse = None
             whole_book = True

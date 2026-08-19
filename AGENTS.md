@@ -8,7 +8,7 @@ Python 3 rewrite of the LDS standard-works CLI (KJV Bible, Book of Mormon, D&C, 
 - There is no Makefile and no test target on this branch. Nothing gates changes; verify manually.
 - Flags differ from the shell version: `-p/--page` opens a pager (`pydoc.pager`); `-c/--chars N` sets wrap width (default 70). There is no "force cat" flag — pipe stdout instead.
 - Queries are space-separated, colon only between chapter and verse: `"1 Nephi 3:7"`, not `"1 Nephi:3:7"`. Book names may be short (`1Ne`) or full (`1 Nephi`).
-- With no args it launches an interactive REPL whose only working verbs are `print/show`, `page/explore`, `help/?`, and `exit/quit/q/leave`. `query`/`search`/`list`/`add` are in the `verbs` table but have no `do_command` case — using one makes the REPL exit silently.
+- With no args it launches an interactive REPL whose only verbs are `print/show`, `page/explore`, `help/?`, and `exit/quit/q/leave`. It has a built-in line editor (no readline): up/down recall history, left/right move the cursor, backspace edits.
 
 ## Layout
 
@@ -20,5 +20,5 @@ Python 3 rewrite of the LDS standard-works CLI (KJV Bible, Book of Mormon, D&C, 
 
 ## Quirks
 
-- `get.py` builds SQL by string interpolation and resolves a book through `map_to_work()` against hardcoded `bible`/`bom`/`dc`/`pogp` name lists. An unmatched book returns `'error'`, producing `SELECT ... FROM error` and an unhandled `sqlite3.OperationalError` traceback (the single-arg path has no try/except; the REPL's bare `except` instead prints "Command not understood.")
+- `get.py` builds SQL by string interpolation and resolves a book through `canonical_book()` (case-insensitive; `d&c`/`dc` alias to `DandC`) then `map_to_work()`. Unmatched books raise `ValueError`; ranges that are too long or span works raise `RuntimeError`/`ValueError`. The single-arg path catches these and prints `Error: <msg>` (exit 1); the REPL's bare `except` instead prints "Command not understood." Whole-book, whole-chapter, and chapter-range (`John 3-5`) queries are supported; `-c N` treats `N <= 0` as wrap width 1.
 - pydoc and the REPL assume a TTY-friendly environment; don't rely on them under pipes.
