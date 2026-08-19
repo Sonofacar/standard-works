@@ -16,7 +16,7 @@ Python 3 rewrite of the LDS standard-works CLI (KJV Bible, Book of Mormon, D&C, 
 - `src/std_works/scriptures.sql` is the only scripture data source — a tracked SQLite DB with tables `bible`, `bom`, `dc`, `pogp`, all `(indx, name, short_name, book_number, chapter, verse, text)`. It is generated data, not hand-edited.
 - `scrape/` holds one-shot offline scrapers (requests + BeautifulSoup + pandas) that crawl churchofjesuschrist.org into SQLite artifacts; nothing wires them to the app or a build.
 - Committed `__pycache__/*.pyc` files are tracked in git, including stale pyc for deleted `notes.py`/`print_verses.py`; don't add more.
-- `setup.py` installs `src/std-works` as a console script with `package_data` carrying the `.sql`.
+- `setup.py` installs `std-works` as a `console_scripts` entry point (`std_works.cli:main`) with `package_data` carrying the `.sql`. Editable installs stay live because the CLI logic lives in the package; `src/std-works` is just a shim that calls `std_works.cli.main`.
 
 ## Quirks
 

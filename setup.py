@@ -7,7 +7,7 @@ setup(
     author = 'Carson Buttars',
     author_email = 'carsonbuttars13@gmail.com',
     packages = ['std_works'],
-    scripts = ['src/std-works'],
+    entry_points = {'console_scripts': ['std-works = std_works.cli:main']},
     package_dir = {"": "src"},
     include_package_data = True,
     package_data = {"": ["*.sql"]}
