@@ -2,9 +2,14 @@
 
 import std_works as lib
 import argparse
+import builtins
+import os
 import sys
+import termios
+import tty
 
 prompt = '📚 > '
+history = []
 verbs = {'print': 'print',
          'show': 'print',
          'page': 'page',
@@ -30,6 +35,56 @@ def print_help():
     """
 
     print(message)
+
+def _redraw(prompt, buf):
+    sys.stdout.write('\r\x1b[2K' + prompt + buf)
+    sys.stdout.flush()
+
+def read_input(prompt):
+    if not sys.stdin.isatty():
+        return builtins.input(prompt)
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    buf = ''
+    pos = len(history)
+    try:
+        tty.setcbreak(fd)
+        _redraw(prompt, buf)
+        while True:
+            ch = os.read(fd, 1)
+            if ch in (b'\r', b'\n'):
+                sys.stdout.write('\r\n')
+                sys.stdout.flush()
+                return buf
+            if ch == b'\x03':
+                raise KeyboardInterrupt
+            if ch == b'\x04':
+                raise EOFError
+            if ch in (b'\x7f', b'\x08'):
+                if buf:
+                    buf = buf[:-1]
+                    _redraw(prompt, buf)
+                continue
+            if ch == b'\x1b':
+                seq = os.read(fd, 1) + os.read(fd, 1)
+                if seq == b'[A':
+                    if pos > 0:
+                        pos -= 1
+                        buf = history[pos]
+                        _redraw(prompt, buf)
+                elif seq == b'[B':
+                    if pos < len(history):
+                        pos += 1
+                        buf = history[pos] if pos < len(history) else ''
+                        _redraw(prompt, buf)
+                continue
+            try:
+                buf += ch.decode()
+            except UnicodeDecodeError:
+                continue
+            _redraw(prompt, buf)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 def get_verse(query):
     dictionary = lib.parse(query)
@@ -129,7 +184,9 @@ else:
 # Script
 while Commandline:
     try:
-        command = input(prompt).strip()
+        command = read_input(prompt).strip()
+        if command:
+            history.append(command)
     except (EOFError, KeyboardInterrupt):
         print()
         break
