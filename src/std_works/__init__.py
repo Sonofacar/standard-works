@@ -34,10 +34,31 @@ def split_lines(text: str, length: int) -> list:
 
     return output
 
-def print_verses(original_phrase: str, verses: list, line_length: int, page: bool = False) -> None:
+def _highlight(line: str, term: str) -> str:
+    """
+    Wrap case-insensitive matches of term in a line with ANSI yellow.
+    """
+    if not term:
+        return line
+    output = ''
+    lower = line.lower()
+    term_lower = term.lower()
+    tlen = len(term)
+    i = 0
+    while True:
+        j = lower.find(term_lower, i)
+        if j == -1:
+            output += line[i:]
+            break
+        output += line[i:j] + '\x1b[33m' + line[j:j + tlen] + '\x1b[0m'
+        i = j + tlen
+    return output
+
+def print_verses(original_phrase: str, verses: list, line_length: int, page: bool = False, highlight: str = None) -> None:
     """
     Handle the printing of verses, including the selection of verses, and
-    allowing for a specified maximum line length.
+    allowing for a specified maximum line length. `highlight` wraps matching
+    substrings in the verse text with ANSI color.
     """
     output = original_phrase + '\n'
 
@@ -45,6 +66,8 @@ def print_verses(original_phrase: str, verses: list, line_length: int, page: boo
         lines = split_lines(verse[-1], line_length)
         lines = ['\t' + x for x in lines]
         lines[0] = str(verse[2]) + '.' + lines[0]
+        if highlight:
+            lines = [_highlight(line, highlight) for line in lines]
 
         for line in lines:
             output = output + line + '\n'

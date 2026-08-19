@@ -13,12 +13,41 @@ verbs = {'print': 'print',
          'show': 'print',
          'page': 'page',
          'explore': 'page',
+         'search': 'search',
+         'find': 'search',
+         'grep': 'search',
          'exit': 'exit',
          'quit': 'exit',
          'q': 'exit',
          'leave': 'exit',
          'help': 'help',
          '?': 'help'}
+
+def _color_enabled():
+    if os.environ.get('NO_COLOR'):
+        return False
+    if os.environ.get('TERM') in ('dumb', 'emacs'):
+        return False
+    return True
+
+def run_search(term, work, limit, page, length):
+    try:
+        verses = lib.search_phrase(term, work, limit)
+    except ValueError as e:
+        print('Error: ' + str(e))
+        return 1
+
+    if not verses:
+        print('No matches for "' + term + '".')
+        return 0
+
+    highlight = term if _color_enabled() else None
+    if not page and not sys.stdout.isatty():
+        highlight = None
+
+    header = str(len(verses)) + ' results for "' + term + '"'
+    lib.print_verses(header, verses, length, page, highlight)
+    return 0
 
 def print_help():
     message = """Usage:
@@ -139,6 +168,16 @@ def do_command(action_dict, length = 70):
             lib.print_verses(phrase, verses, length, True)
             return True
 
+        case 'search':
+            target = action_dict['target']
+            scope = ''
+            words = target.split()
+            if len(words) > 1 and lib.canonical_book(words[-1]) in lib.book_names:
+                scope = words[-1]
+                target = ' '.join(words[:-1])
+            run_search(target, scope, 50, False, length)
+            return True
+
         case 'exit':
             return False
 
@@ -179,7 +218,35 @@ def main():
             default = 70,
             help = "Set maximum number of characters in a line."
             )
+    parser.add_argument(
+            "-s",
+            "--search",
+            action = "store",
+            type = str,
+            default = None,
+            help = "Search the scriptures for a term."
+            )
+    parser.add_argument(
+            "--work",
+            action = "store",
+            type = str,
+            default = "",
+            help = "Restrict --search to a specific book or work."
+            )
+    parser.add_argument(
+            "--limit",
+            action = "store",
+            type = int,
+            default = 50,
+            help = "Maximum number of search results."
+            )
     args = vars(parser.parse_args(sys.argv[1:]))
+
+    if args['search'] is not None:
+        work = args['work']
+        if not work and args['selection']:
+            work = args['selection']
+        return run_search(args['search'], work, args['limit'], args['page'], args['chars'])
 
     if args['selection'] == None:
         Commandline = True

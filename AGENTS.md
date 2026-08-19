@@ -6,9 +6,9 @@ Python 3 rewrite of the LDS standard-works CLI (KJV Bible, Book of Mormon, D&C, 
 
 - Entry point is `src/std-works` (`#!/usr/bin/python3`). No build step — it runs in place: `./src/std-works "1 Nephi 3:7"`. The 2 MB `std-works` file at the repo root is a stale leftover binary from `master`; ignore it.
 - There is no Makefile and no test target on this branch. Nothing gates changes; verify manually.
-- Flags differ from the shell version: `-p/--page` opens a pager (`pydoc.pager`); `-c/--chars N` sets wrap width (default 70). There is no "force cat" flag — pipe stdout instead.
+- Flags differ from the shell version: `-p/--page` opens a pager (`pydoc.pager`, which invokes `less` with `-R`); `-c/--chars N` sets wrap width (default 70). `-s/--search TERM` searches all works (case-insensitive substring) with optional `--work BOOK` scope (a book name or a `bible`/`bom`/`dc`/`pogp` table) and `--limit N` (default 50); a positional selection after the term also scopes the search. Search results highlight the term in yellow (dropped when stdout is not a TTY, `NO_COLOR` set, or `TERM` is `dumb`). There is no "force cat" flag — pipe stdout instead.
 - Queries are space-separated, colon only between chapter and verse: `"1 Nephi 3:7"`, not `"1 Nephi:3:7"`. Book names may be short (`1Ne`) or full (`1 Nephi`).
-- With no args it launches an interactive REPL whose only verbs are `print/show`, `page/explore`, `help/?`, and `exit/quit/q/leave`. It has a built-in line editor (no readline): up/down recall history, left/right move the cursor, backspace edits.
+- With no args it launches an interactive REPL whose only verbs are `print/show`, `page/explore`, `search/find/grep` (trailing book name scopes the search), `help/?`, and `exit/quit/q/leave`. It has a built-in line editor (no readline): up/down recall history, left/right move the cursor, backspace edits.
 
 ## Layout
 

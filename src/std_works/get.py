@@ -46,6 +46,8 @@ book_names = bible + bom + dc + pogp
 
 columns_to_get = 'name,chapter,verse,text'
 
+works = ['bible', 'bom', 'dc', 'pogp']
+
 _aliases = {'d&c': 'DandC', 'dc': 'DandC'}
 
 _canonical_map = {}
@@ -98,6 +100,43 @@ def use_phrase(phrase: str) -> list:
         cur = con.cursor()
         cur.execute(phrase)
         return cur.fetchall()
+
+def search_phrase(term: str, work: str = '', limit: int = None) -> list:
+    """
+    Search the text of the scriptures for a term and return matching verses.
+    `work` may be a book name or a table name. Results are truncated to
+    `limit` (None means no limit).
+    """
+    if not term.strip():
+        raise ValueError('Empty search term.')
+    escaped = term.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+    match = ' WHERE text LIKE \'%' + escaped + '%\' ESCAPE \'\\\''
+
+    if work:
+        book = canonical_book(work)
+        if book in works:
+            table = book
+            name_clause = ''
+        else:
+            table = map_to_work(book)
+            if table == 'error':
+                raise ValueError('Unknown book: ' + work)
+            if is_short_name(book):
+                name_clause = ' AND short_name LIKE \'' + book + '\''
+            else:
+                name_clause = ' AND name LIKE \'' + book + '\''
+        phrase = 'SELECT ' + columns_to_get + ' FROM ' + table + match + name_clause + ';'
+        output = use_phrase(phrase)
+    else:
+        output = []
+        for table in works:
+            phrase = 'SELECT ' + columns_to_get + ' FROM ' + table + match + ';'
+            output.extend(use_phrase(phrase))
+
+    if limit is not None:
+        limit = max(0, int(limit))
+        output = output[:limit]
+    return output
 
 def make_normal_phrase(verse_dict: dict, index: bool = False) -> str:
     """
