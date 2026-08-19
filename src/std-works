@@ -7,6 +7,7 @@ import os
 import sys
 import termios
 import tty
+import unicodedata
 
 prompt = '📚 > '
 history = []
@@ -36,8 +37,14 @@ def print_help():
 
     print(message)
 
-def _redraw(prompt, buf):
+def _width(s):
+    return sum(2 if unicodedata.east_asian_width(c) in ('W', 'F') else 1 for c in s)
+
+def _redraw(prompt, buf, cur=0):
     sys.stdout.write('\r\x1b[2K' + prompt + buf)
+    tail = buf[cur:]
+    if tail:
+        sys.stdout.write('\x1b[%dD' % _width(tail))
     sys.stdout.flush()
 
 def read_input(prompt):
@@ -46,6 +53,7 @@ def read_input(prompt):
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
     buf = ''
+    cur = 0
     pos = len(history)
     try:
         tty.setcbreak(fd)
@@ -61,9 +69,10 @@ def read_input(prompt):
             if ch == b'\x04':
                 raise EOFError
             if ch in (b'\x7f', b'\x08'):
-                if buf:
-                    buf = buf[:-1]
-                    _redraw(prompt, buf)
+                if cur > 0:
+                    buf = buf[:cur - 1] + buf[cur:]
+                    cur -= 1
+                    _redraw(prompt, buf, cur)
                 continue
             if ch == b'\x1b':
                 seq = os.read(fd, 1) + os.read(fd, 1)
@@ -71,18 +80,30 @@ def read_input(prompt):
                     if pos > 0:
                         pos -= 1
                         buf = history[pos]
-                        _redraw(prompt, buf)
+                        cur = len(buf)
+                        _redraw(prompt, buf, cur)
                 elif seq == b'[B':
                     if pos < len(history):
                         pos += 1
                         buf = history[pos] if pos < len(history) else ''
-                        _redraw(prompt, buf)
+                        cur = len(buf)
+                        _redraw(prompt, buf, cur)
+                elif seq == b'[C':
+                    if cur < len(buf):
+                        cur += 1
+                        _redraw(prompt, buf, cur)
+                elif seq == b'[D':
+                    if cur > 0:
+                        cur -= 1
+                        _redraw(prompt, buf, cur)
                 continue
             try:
-                buf += ch.decode()
+                c = ch.decode()
             except UnicodeDecodeError:
                 continue
-            _redraw(prompt, buf)
+            buf = buf[:cur] + c + buf[cur:]
+            cur += 1
+            _redraw(prompt, buf, cur)
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
