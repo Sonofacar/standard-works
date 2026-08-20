@@ -54,6 +54,17 @@ def _highlight(line: str, term: str) -> str:
         i = j + tlen
     return output
 
+def _format_verse(verse: tuple, line_length: int, highlight: str, prefix: str) -> list:
+    """
+    Wrap, indent, number, and optionally highlight a single verse's text.
+    """
+    lines = split_lines(verse[-1], line_length)
+    lines = ['\t' + x for x in lines]
+    lines[0] = prefix + '.' + lines[0]
+    if highlight:
+        lines = [_highlight(line, highlight) for line in lines]
+    return lines
+
 def print_verses(original_phrase: str, verses: list, line_length: int, page: bool = False, highlight: str = None) -> None:
     """
     Handle the printing of verses, including the selection of verses, and
@@ -63,14 +74,28 @@ def print_verses(original_phrase: str, verses: list, line_length: int, page: boo
     output = original_phrase + '\n'
 
     for verse in verses:
-        lines = split_lines(verse[-1], line_length)
-        lines = ['\t' + x for x in lines]
-        lines[0] = str(verse[2]) + '.' + lines[0]
-        if highlight:
-            lines = [_highlight(line, highlight) for line in lines]
-
-        for line in lines:
+        for line in _format_verse(verse, line_length, highlight, str(verse[2])):
             output = output + line + '\n'
+
+    if page:
+        pydoc.pager(output)
+    else:
+        print(output)
+
+def print_search(verses: list, line_length: int, page: bool = False, highlight: str = None) -> None:
+    """
+    Print search results, each with its reference (Book Chapter:Verse) on its
+    own line, followed by the verse rendered as normal. `highlight` wraps
+    matching substrings in the verse text with ANSI color.
+    """
+    output = ''
+
+    for verse in verses:
+        reference = str(verse[0]) + ' ' + str(verse[1]) + ':' + str(verse[2])
+        output = output + reference + '\n'
+        for line in _format_verse(verse, line_length, highlight, str(verse[2])):
+            output = output + line + '\n'
+        output = output + '\n'
 
     if page:
         pydoc.pager(output)

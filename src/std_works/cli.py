@@ -45,8 +45,7 @@ def run_search(term, work, limit, page, length):
     if not page and not sys.stdout.isatty():
         highlight = None
 
-    header = str(len(verses)) + ' results for "' + term + '"'
-    lib.print_verses(header, verses, length, page, highlight)
+    lib.print_search(verses, length, page, highlight)
     return 0
 
 def print_help():
