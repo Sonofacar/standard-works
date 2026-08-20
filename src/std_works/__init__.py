@@ -82,6 +82,14 @@ def print_verses(original_phrase: str, verses: list, line_length: int, page: boo
     else:
         print(output)
 
+def print_search_list(verses: list) -> None:
+    """
+    Print only the reference (Book Chapter:Verse) of each matching verse,
+    one per line.
+    """
+    for verse in verses:
+        print(str(verse[0]) + ' ' + str(verse[1]) + ':' + str(verse[2]))
+
 def print_search(verses: list, line_length: int, page: bool = False, highlight: str = None) -> None:
     """
     Print search results, each with its reference (Book Chapter:Verse) on its

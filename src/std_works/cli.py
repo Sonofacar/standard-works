@@ -16,6 +16,7 @@ verbs = {'print': 'print',
          'search': 'search',
          'find': 'search',
          'grep': 'search',
+         'list-search': 'list-search',
          'exit': 'exit',
          'quit': 'exit',
          'q': 'exit',
@@ -30,7 +31,7 @@ def _color_enabled():
         return False
     return True
 
-def run_search(term, work, limit, page, length):
+def run_search(term, work, limit, page, length, list_mode=False):
     try:
         verses = lib.search_phrase(term, work, limit)
     except ValueError as e:
@@ -39,6 +40,10 @@ def run_search(term, work, limit, page, length):
 
     if not verses:
         print('No matches for "' + term + '".')
+        return 0
+
+    if list_mode:
+        lib.print_search_list(verses)
         return 0
 
     highlight = term if _color_enabled() else None
@@ -55,6 +60,12 @@ def print_help():
 
     \t<page, explore> <verse(s)>
     Print the verses inside a pager.
+
+    \t<search, find, grep> <term> [book]
+    Print matching verses, each with its reference.
+
+    \t<list-search> <term> [book]
+    Print only the references of matching verses, one per line.
 
     \t<help, ?>
     Print this help message.
@@ -177,6 +188,16 @@ def do_command(action_dict, length = 70):
             run_search(target, scope, 50, False, length)
             return True
 
+        case 'list-search':
+            target = action_dict['target']
+            scope = ''
+            words = target.split()
+            if len(words) > 1 and lib.canonical_book(words[-1]) in lib.book_names:
+                scope = words[-1]
+                target = ' '.join(words[:-1])
+            run_search(target, scope, 50, False, length, True)
+            return True
+
         case 'exit':
             return False
 
@@ -226,6 +247,14 @@ def main():
             help = "Search the scriptures for a term."
             )
     parser.add_argument(
+            "-S",
+            "--list-search",
+            action = "store",
+            type = str,
+            default = None,
+            help = "Search the scriptures and print only the references of matching verses."
+            )
+    parser.add_argument(
             "--work",
             action = "store",
             type = str,
@@ -241,11 +270,18 @@ def main():
             )
     args = vars(parser.parse_args(sys.argv[1:]))
 
-    if args['search'] is not None:
+    if args['search'] is not None or args['list_search'] is not None:
+        if args['search'] is not None and args['list_search'] is not None:
+            print('Error: --search and --list-search cannot be used together.')
+            return 1
+        term = args['search'] if args['search'] is not None else args['list_search']
+        list_mode = args['list_search'] is not None
+        if list_mode and args['page']:
+            print('Warning: --page is ignored with --list-search.', file = sys.stderr)
         work = args['work']
         if not work and args['selection']:
             work = args['selection']
-        return run_search(args['search'], work, args['limit'], args['page'], args['chars'])
+        return run_search(term, work, args['limit'], args['page'], args['chars'], list_mode)
 
     if args['selection'] == None:
         Commandline = True
