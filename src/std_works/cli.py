@@ -31,9 +31,9 @@ def _color_enabled():
         return False
     return True
 
-def run_search(term, work, limit, page, length, list_mode=False):
+def run_search(term, work, page, length, list_mode=False):
     try:
-        verses = lib.search_phrase(term, work, limit)
+        verses = lib.search_phrase(term, work)
     except ValueError as e:
         print('Error: ' + str(e))
         return 1
@@ -185,7 +185,7 @@ def do_command(action_dict, length = 70):
             if len(words) > 1 and lib.canonical_book(words[-1]) in lib.book_names:
                 scope = words[-1]
                 target = ' '.join(words[:-1])
-            run_search(target, scope, 50, False, length)
+            run_search(target, scope, False, length)
             return True
 
         case 'list-search':
@@ -195,7 +195,7 @@ def do_command(action_dict, length = 70):
             if len(words) > 1 and lib.canonical_book(words[-1]) in lib.book_names:
                 scope = words[-1]
                 target = ' '.join(words[:-1])
-            run_search(target, scope, 50, False, length, True)
+            run_search(target, scope, False, length, True)
             return True
 
         case 'exit':
@@ -261,13 +261,6 @@ def main():
             default = "",
             help = "Restrict --search to a specific book or work."
             )
-    parser.add_argument(
-            "--limit",
-            action = "store",
-            type = int,
-            default = 50,
-            help = "Maximum number of search results."
-            )
     args = vars(parser.parse_args(sys.argv[1:]))
 
     if args['search'] is not None or args['list_search'] is not None:
@@ -281,7 +274,7 @@ def main():
         work = args['work']
         if not work and args['selection']:
             work = args['selection']
-        return run_search(term, work, args['limit'], args['page'], args['chars'], list_mode)
+        return run_search(term, work, args['page'], args['chars'], list_mode)
 
     if args['selection'] == None:
         Commandline = True

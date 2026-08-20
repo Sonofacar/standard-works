@@ -101,11 +101,10 @@ def use_phrase(phrase: str) -> list:
         cur.execute(phrase)
         return cur.fetchall()
 
-def search_phrase(term: str, work: str = '', limit: int = None) -> list:
+def search_phrase(term: str, work: str = '') -> list:
     """
     Search the text of the scriptures for a term and return matching verses.
-    `work` may be a book name or a table name. Results are truncated to
-    `limit` (None means no limit).
+    `work` may be a book name or a table name.
     """
     if not term.strip():
         raise ValueError('Empty search term.')
@@ -133,9 +132,6 @@ def search_phrase(term: str, work: str = '', limit: int = None) -> list:
             phrase = 'SELECT ' + columns_to_get + ' FROM ' + table + match + ';'
             output.extend(use_phrase(phrase))
 
-    if limit is not None:
-        limit = max(0, int(limit))
-        output = output[:limit]
     return output
 
 def make_normal_phrase(verse_dict: dict, index: bool = False) -> str:
