@@ -195,13 +195,13 @@ def do_command(action_dict, length = 70):
         case 'print':
             phrase = action_dict['target']
             verses = get_verse(phrase)
-            lib.print_verses(phrase, verses, length)
+            lib.print_verses(phrase, verses, length, clean = action_dict.get('clean', False))
             return True
 
         case 'page':
             phrase = action_dict['target']
             verses = get_verse(phrase)
-            lib.print_verses(phrase, verses, length, True)
+            lib.print_verses(phrase, verses, length, True, clean = action_dict.get('clean', False))
             return True
 
         case 'search':
@@ -299,17 +299,29 @@ def main():
             default = None,
             help = "List the reference of each verse selected by a query (e.g. 'Alma 1', 'bom')."
             )
+    parser.add_argument(
+            "-C",
+            "--clean",
+            action = "store_true",
+            help = "Print only the verse text, without verse numbers or the reference."
+            )
     args = vars(parser.parse_args(sys.argv[1:]))
 
     if args['list'] is not None:
         if args['search'] is not None or args['list_search'] is not None:
             print('Error: --list cannot be used with --search or --list-search.')
             return 1
+        if args['clean']:
+            print('Error: --clean cannot be used with --list.')
+            return 1
         return run_list(args['list'], args['page'], args['chars'])
 
     if args['search'] is not None or args['list_search'] is not None:
         if args['search'] is not None and args['list_search'] is not None:
             print('Error: --search and --list-search cannot be used together.')
+            return 1
+        if args['clean']:
+            print('Error: --clean cannot be used with --search or --list-search.')
             return 1
         term = args['search'] if args['search'] is not None else args['list_search']
         list_mode = args['list_search'] is not None
@@ -333,6 +345,7 @@ def main():
         else:
             action['action'] = 'print'
         action['target'] = args['selection'].strip()
+        action['clean'] = args['clean']
 
         try:
             do_command(action, args['chars'])

@@ -65,22 +65,32 @@ def _format_verse(verse: tuple, line_length: int, highlight: str, prefix: str) -
         lines = [_highlight(line, highlight) for line in lines]
     return lines
 
-def print_verses(original_phrase: str, verses: list, line_length: int, page: bool = False, highlight: str = None) -> None:
+def print_verses(original_phrase: str, verses: list, line_length: int, page: bool = False, highlight: str = None, clean: bool = False) -> None:
     """
     Handle the printing of verses, including the selection of verses, and
     allowing for a specified maximum line length. `highlight` wraps matching
-    substrings in the verse text with ANSI color.
+    substrings in the verse text with ANSI color. When `clean` is set, the
+    entire selection is treated as one verse: only the text is printed, with
+    no reference line, verse numbers, or verse breaks.
     """
-    output = original_phrase + '\n'
+    output = ''
+    if clean:
+        text = ' '.join(verse[-1] for verse in verses)
+        lines = split_lines(text, line_length)
+        if highlight:
+            lines = [_highlight(line, highlight) for line in lines]
+        output = '\n'.join(lines)
+    else:
+        output = original_phrase + '\n'
 
-    for verse in verses:
-        for line in _format_verse(verse, line_length, highlight, str(verse[2])):
-            output = output + line + '\n'
+        for verse in verses:
+            for line in _format_verse(verse, line_length, highlight, str(verse[2])):
+                output = output + line + '\n'
 
     if page:
-        pydoc.pager(output)
+        pydoc.pager(output.rstrip('\n'))
     else:
-        print(output)
+        print(output.rstrip('\n'))
 
 def print_search_list(verses: list, page: bool = False) -> None:
     """
