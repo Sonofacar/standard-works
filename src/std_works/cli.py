@@ -17,6 +17,7 @@ verbs = {'print': 'print',
          'find': 'search',
          'grep': 'search',
          'list-search': 'list-search',
+         'list': 'list',
          'exit': 'exit',
          'quit': 'exit',
          'q': 'exit',
@@ -53,6 +54,28 @@ def run_search(term, work, page, length, list_mode=False):
     lib.print_search(verses, length, page, highlight)
     return 0
 
+def run_list(query, page, length):
+    if not query.strip():
+        print('Error: Nothing to list.')
+        return 1
+
+    table = lib.resolve_work(query)
+    if table:
+        verses = lib.list_work(table)
+    else:
+        try:
+            verses = lib.get_verses(lib.make_phrase(lib.parse(query)))
+        except (ValueError, RuntimeError) as e:
+            print('Error: ' + str(e))
+            return 1
+
+    if not verses:
+        print('No verses found for "' + query + '".')
+        return 0
+
+    lib.print_search_list(verses, page)
+    return 0
+
 def print_help():
     message = """Usage:
     \t<print, show> <verse(s)>
@@ -66,6 +89,9 @@ def print_help():
 
     \t<list-search> <term> [book]
     Print only the references of matching verses, one per line.
+
+    \t<list> <query>
+    List the reference of each verse selected by a query (e.g. 'Alma 1', 'bom').
 
     \t<help, ?>
     Print this help message.
@@ -198,6 +224,10 @@ def do_command(action_dict, length = 70):
             run_search(target, scope, False, length, True)
             return True
 
+        case 'list':
+            run_list(action_dict['target'], False, length)
+            return True
+
         case 'exit':
             return False
 
@@ -261,7 +291,21 @@ def main():
             default = "",
             help = "Restrict --search to a specific book or work."
             )
+    parser.add_argument(
+            "-l",
+            "--list",
+            action = "store",
+            type = str,
+            default = None,
+            help = "List the reference of each verse selected by a query (e.g. 'Alma 1', 'bom')."
+            )
     args = vars(parser.parse_args(sys.argv[1:]))
+
+    if args['list'] is not None:
+        if args['search'] is not None or args['list_search'] is not None:
+            print('Error: --list cannot be used with --search or --list-search.')
+            return 1
+        return run_list(args['list'], args['page'], args['chars'])
 
     if args['search'] is not None or args['list_search'] is not None:
         if args['search'] is not None and args['list_search'] is not None:

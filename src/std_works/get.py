@@ -48,6 +48,30 @@ columns_to_get = 'name,chapter,verse,text'
 
 works = ['bible', 'bom', 'dc', 'pogp']
 
+_work_aliases = {
+    'bible': 'bible',
+    'book of mormon': 'bom',
+    'bom': 'bom',
+    'doctrine and covenants': 'dc',
+    'd&c': 'dc',
+    'dc': 'dc',
+    'pearl of great price': 'pogp',
+    'pogp': 'pogp',
+}
+
+def resolve_work(query: str) -> str:
+    """
+    Return the table name for a work name or alias, or '' if the query is
+    not a work name.
+    """
+    return _work_aliases.get(query.strip().lower(), '')
+
+def list_work(table: str) -> list:
+    """
+    Return every verse of a work table in canonical order.
+    """
+    return use_phrase('SELECT ' + columns_to_get + ' FROM ' + table + ' ORDER BY indx;')
+
 _aliases = {'d&c': 'DandC', 'dc': 'DandC'}
 
 _canonical_map = {}
